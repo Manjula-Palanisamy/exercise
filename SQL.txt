@@ -1,0 +1,239 @@
+
+
+
+SELECT * FROM USERREGISTER
+
+DROP TABLE UserRegister
+
+CREATE TABLE UserRegister(
+UserRegisterID INT IDENTITY(1,1) NOT NULL,
+FirstName	VARCHAR(100) NOT NULL,
+LastName	VARCHAR(100) NOT NULL,
+Email		VARCHAR(80)  NOT NULL,
+PhoneNumber  VARCHAR(80) NOT NULL,
+Address		VARCHAR(150),
+City		VARCHAR(100),
+State		SMALLINT,
+Country		VARCHAR(100),
+PostalCode  VARCHAR(10),
+CreatedBy	INT NOT NULL,
+CreatedDate DATETIME NOT NULL,
+ModifiedDate DATETIME NULL,
+)
+
+ALTER TABLE UserRegister
+ADD Latitude VARCHAR(50);
+ALTER TABLE UserRegister
+ADD Longtitude VARCHAR(50);
+__________________________________________________________________________________________
+
+USE [Practice]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/*
+---- Execution Part --------
+declare @Returnstatus int
+exec uspUserRegister  0,'Alwin UserFN','Leo UserLN','alwin@test.com','4165456232','address','city','state','country','45698',1,@Returnstatus out
+select @Returnstatus
+
+
+--ALTER TABLE UserRegister
+--DROP COLUMN Latitude;
+
+ALTER TABLE UserRegister
+ADD Latitude VARCHAR(50);
+
+SELECT * FROM USERREGISTER
+----------------------------
+============================================================================================================================================
+*/
+ALTER PROCEDURE [dbo].[uspUserRegister](
+@UserRegisterID				INT,
+@FirstName					VARCHAR(100),
+@LastName					VARCHAR(100),
+@Email						VARCHAR(80),
+@PhoneNumber 				VARCHAR(80),
+@Address					VARCHAR(150),
+@City						VARCHAR(100),
+@State						VARCHAR(100),
+@Country					VARCHAR(100),
+@PostalCode  				VARCHAR(10),
+@Longtitude					VARCHAR(50),
+@Latitude					VARCHAR(50),
+@CreatedBy					INT,
+@ReturnStatus				INT	OUTPUT
+)
+AS
+BEGIN
+	IF (@UserRegisterID = 0)
+		BEGIN
+		INSERT INTO dbo.UserRegister
+                        (
+						 FirstName	,
+						 LastName	,
+						 Email		,
+						 PhoneNumber,
+						 Address	,
+						 City		,
+						 State		,
+						 Country	,
+						 PostalCode ,
+						 CreatedBy	,
+						 Latitude   ,
+						 Longtitude  ,
+						 CreatedDate
+						 )
+            VALUES     (
+                         @FirstName		
+                         ,@LastName		
+                         ,@Email			
+						 ,@PhoneNumber 	
+						 ,@Address		
+						 ,@City			
+						 ,@State			
+						 ,@Country		
+						 ,@PostalCode  	
+						 ,@CreatedBy
+						 ,@Latitude 
+						 ,@Longtitude		
+						 ,GETDATE()
+						)
+						 SET @ReturnStatus = 1 -- Inserted successfully
+		END
+	ELSE IF (@UserRegisterID !=0)
+	BEGIN
+	UPDATE UserRegister SET 
+	FirstName		= @FirstName
+	,LastName		= @LastName
+	,Email			= @Email	
+	,PhoneNumber	= @PhoneNumber
+	,Address		= @Address	
+	,City			= @City		
+	,State			= @State	
+	,Country		= @Country	
+	,PostalCode 	= @PostalCode
+	,CreatedBy		= @CreatedBy
+	,Latitude 		= @Latitude
+	,Longtitude		= @Longtitude
+	,ModifiedDate	= GETDATE()
+
+			WHERE UserRegisterID  = @UserRegisterID	
+			SET @ReturnStatus = 2 -- Updated successfully
+	END
+END
+________________________________________________________________________________________________________________________________
+
+USE [Practice]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/*
+============================================================================================================================================
+	
+---- Execution Part --------
+uspLoadUserDetails  0,'','', 100,1,10,'' --grid admin login
+
+uspLoadUserDetails  
+@UserRegisterID		= 0
+,@FirstName			= ''
+,@LastName			= ''
+,@Email				= ''
+,@PhoneNumber 		= ''
+,@Address			= ''
+,@City				= ''
+,@State				= ''
+,@Country			= ''
+,@PostalCode  		= ''
+,@PageNumber		= 1
+,@RecordsPerPage	= 100
+,@SortColumn		= 'FirstName asc'
+
+
+UPDATE UserRegister
+SET State = 'TamilNadu' WHERE UserRegisterID = 6;
+
+
+
+
+
+
+
+
+
+----------------------------
+============================================================================================================================================
+*/
+ALTER PROCEDURE [dbo].[uspLoadUserDetails]
+
+@UserRegisterID				INT,
+@FirstName					VARCHAR(100) ,
+@LastName					VARCHAR(100) ,
+@Email						VARCHAR(80)  ,
+@PhoneNumber 				VARCHAR(80)  ,
+@Address					VARCHAR(150) ,
+@City						VARCHAR(100) ,
+@State						VARCHAR(100) ,
+@Country					VARCHAR(100) ,
+@PostalCode  				VARCHAR(10)  ,
+@PageNumber					INT = 0,
+@RecordsPerPage				INT = 0,
+@SortColumn					VARCHAR(100) = ''
+
+AS
+SET NOCOUNT ON;
+BEGIN
+	SELECT @SortColumn = CASE WHEN LEN (@SortColumn) = 0 THEN 'CreatedDate DESC' ELSE @SortColumn END
+	SELECT	*
+	FROM	(
+				SELECT 
+				UserRegisterID	
+				, FirstName		
+				, LastName		
+				, Email			
+				, PhoneNumber 	
+				, Address		
+				, City			
+				, State			
+				, Country		
+				, PostalCode  
+				, Latitude
+				, Longtitude  	
+				, CONVERT(DATETIME2(0),CAST(CreatedDate AS DATETIME) + CAST(CreatedDate AS DATETIME)) AS CreatedDateTime
+				, COUNT (UserRegisterID) OVER() AS TotalRecordCount
+				FROM	UserRegister
+				WHERE	(UserRegisterID			= @UserRegisterID		OR @UserRegisterID = 0)
+						AND (FirstName		= @FirstName		OR @FirstName	 = '')
+						AND (LastName		= @LastName			OR @LastName	 = '')
+						AND (Email			= @Email			OR @Email		 = '')
+						AND (PhoneNumber	= @PhoneNumber		OR @PhoneNumber  = '')
+						AND (Address		= @Address			OR @Address		 = '')
+						AND (City			= @City				OR @City		 = '')
+						AND (Country		= @Country			OR @Country		 = '')
+						AND (PostalCode		= @PostalCode		OR @PostalCode	 = '')
+			) AS DerivedTbl
+	ORDER BY 
+	CASE WHEN @SortColumn = 'UserRegisterID'		OR @SortColumn = 'UserRegisterID ASC'			THEN UserRegisterID	END,
+	CASE WHEN @SortColumn = 'UserRegisterID'		OR @SortColumn = 'UserRegisterID DESC'			THEN UserRegisterID	END DESC,
+	CASE WHEN @SortColumn = 'FirstName'				OR @SortColumn = 'FirstName ASC'				THEN FirstName	END,
+	CASE WHEN @SortColumn = 'FirstName'				OR @SortColumn = 'FirstName DESC'				THEN FirstName	END DESC,
+	CASE WHEN @SortColumn = 'LastName'				OR @SortColumn = 'LastName ASC'					THEN LastName	END,
+	CASE WHEN @SortColumn = 'LastName'				OR @SortColumn = 'LastName DESC'				THEN LastName	END DESC,
+	CASE WHEN @SortColumn = 'Email'					OR @SortColumn = 'Email ASC'					THEN Email	END,
+	CASE WHEN @SortColumn = 'Email'					OR @SortColumn = 'Email DESC'					THEN Email	END DESC,
+	CASE WHEN @SortColumn = 'CreatedDate'			OR @SortColumn = 'CreatedDate ASC'				THEN CreatedDateTime	END,
+	CASE WHEN @SortColumn = 'CreatedDate DESC'	THEN CreatedDateTime END DESC	
+	OFFSET (@PageNumber-1)* @RecordsPerPage ROWS
+	FETCH NEXT @RecordsPerPage ROWS ONLY
+	
+END
+SET NOCOUNT OFF;
+
+
+
+
+
